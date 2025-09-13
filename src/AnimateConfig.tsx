@@ -133,6 +133,10 @@ export const AnimateConfig = ({
     saveAnimateOption('pointerWidth', e.target.value);
   };
 
+  const nonDeletedElements = drawing.elements
+    .filter((e) => !e.isDeleted)
+  const elementMap = {}
+  nonDeletedElements.forEach(elem => { elementMap[elem.id] = elem })
   return (
     <div
       style={{
@@ -147,28 +151,33 @@ export const AnimateConfig = ({
 
       <div>
         Order:{' '}
-        <DndProvider backend={HTML5Backend}>
-          <SortableList
-            items={drawing.elements
-              .filter(
-                (e) =>
-                  !e.isDeleted &&
-                  animationData[e.id]?.animateOrder !== undefined,
-              )
-              .sort(
-                (a, b) =>
-                  (animationData[a.id]?.animateOrder ?? 0) -
-                  (animationData[b.id]?.animateOrder ?? 0),
-              )
-              .map((element) => ({
-                id: element.id,
-                text:
-                  `#${animationData[element.id]?.animateOrder} ${element.type
-                  } ${element.id.slice(0, 3)}...` || '',
-              }))}
-            setItems={(items) => onSortEnd(items.map((item) => item.id))}
-          />
-        </DndProvider>
+        <div style={{ maxHeight: 600, overflowY: 'auto' }}>
+          <DndProvider backend={HTML5Backend}>
+            <SortableList
+              items={nonDeletedElements
+                .filter(
+                  (e) =>
+                    !e.containerId &&
+                    animationData[e.id]?.animateOrder !== undefined,
+                )
+                .sort(
+                  (a, b) =>
+                    (animationData[a.id]?.animateOrder ?? 0) -
+                    (animationData[b.id]?.animateOrder ?? 0),
+                )
+                .map((element) => {
+                  console.log(element)
+                  return ({
+                    id: element.id,
+                    text:
+                      `#${animationData[element.id]?.animateOrder} ${element.type
+                      } [${element.id.slice(0, 3)}...] [${getElementText(element, elementMap)}]` || '',
+                  })
+                })}
+              setItems={(items) => onSortEnd(items.map((item) => item.id))}
+            />
+          </DndProvider>
+        </div>
       </div>
 
       <div style={{ opacity: animateDurationDisabled ? 0.3 : 1.0 }}>
@@ -194,48 +203,16 @@ export const AnimateConfig = ({
         )}
       </div>
 
-      {/* Pointer Section */}
-      <div style={{ fontWeight: 'bold', margin: '8px 0 4px' }}>Pointer</div>
-
-      <div
-        style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}
-      >
-        <input
-          className="app-input"
-          defaultValue={defaultAnimateOptions.pointerImg || ''}
-          onChange={onChangeAnimatePointerText}
-          placeholder="Enter URL or choose a File..."
-        />
-        <input
-          id="pointerFile"
-          type="file"
-          accept="image/*"
-          onChange={onChangeAnimatePointerFile}
-          style={{ display: 'none' }}
-        />
-        <label
-          htmlFor="pointerFile"
-          className="app-button"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-          }}
-        >
-          File...
-        </label>
-      </div>
-
-      <div>
-        Width:{' '}
-        <input
-          className="app-input"
-          defaultValue={defaultAnimateOptions.pointerWidth || ''}
-          onChange={onChangeAnimatePointerWidth}
-          placeholder="Default"
-          style={{ width: 50, minWidth: 50 }}
-        />{' '}
-        px
-      </div>
     </div>
   );
 };
+
+function getElementText(elem: ExcalidrawElement, elementMap) {
+  let text = '';
+  elem.boundElements?.forEach(e => {
+    if (e.type === 'text') {
+      text = elementMap[e.id].text
+    }
+  })
+  return text
+}
