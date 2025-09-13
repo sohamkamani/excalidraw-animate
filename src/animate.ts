@@ -525,9 +525,9 @@ const patchSvgFreedraw = (
     const dFrom =
       i > 0
         ? getFreeDrawSvgPath({
-            ...freeDrawElement,
-            points: freeDrawElement.points.slice(0, i),
-          })
+          ...freeDrawElement,
+          points: freeDrawElement.points.slice(0, i),
+        })
         : 'M 0 0';
     animateFromToPath(
       svg,
@@ -645,19 +645,40 @@ export const animateSvg = (
   elements: readonly NonDeletedExcalidrawElement[],
   options: AnimateOptions = {},
 ) => {
-  const groups = createGroups(svg, elements);
+  const reorderedElements: NonDeletedExcalidrawElement[] = [];
+  const boundTextElementIds = new Set(
+    elements.filter((el) => el.type === 'text' && el.containerId).map((el) => el.id)
+  );
+
+  elements.forEach((element) => {
+    // If this is a bound text element, skip it. It will be added
+    // right after its container element.
+    if (boundTextElementIds.has(element.id)) {
+      return;
+    }
+
+    // Add the container element first.
+    reorderedElements.push(element);
+
+    // Find and add all text elements bound to this container.
+    const boundElements = elements.filter(
+      (e) => e.type === 'text' && e.containerId === element.id
+    );
+    reorderedElements.push(...boundElements);
+  });
+  const groups = createGroups(svg, reorderedElements);
   const finished = new Map();
   let current = options.startMs ?? 1000; // 1 sec margin
   const groupDur = 5000;
   const individualDur = 500;
   const groupNodes = filterGroupNodes(svg.childNodes as NodeListOf<SVGElement>);
-  if (groupNodes.length !== elements.length) {
+  if (groupNodes.length !== reorderedElements.length) {
     throw new Error('element length mismatch');
   }
   const groupElement2Element = new Map(
-    groupNodes.map((ele, index) => [ele, elements[index]]),
+    groupNodes.map((ele, index) => [ele, reorderedElements[index]]),
   );
-  sortSvgNodes(groupNodes, elements).forEach((ele) => {
+  sortSvgNodes(groupNodes, reorderedElements).forEach((ele) => {
     const element = groupElement2Element.get(
       ele,
     ) as NonDeletedExcalidrawElement;
@@ -674,13 +695,13 @@ export const animateSvg = (
         finished.set(ele, true);
         group.forEach(([childEle, childIndex]) => {
           const dur =
-            extractNumberFromElement(elements[childIndex], 'animateDuration') ||
+            extractNumberFromElement(reorderedElements[childIndex], 'animateDuration') ||
             groupDur / (group.length + 1);
           if (!finished.has(childEle)) {
             patchSvgEle(
               svg,
               childEle,
-              elements[childIndex],
+              reorderedElements[childIndex],
               current,
               dur,
               options,
