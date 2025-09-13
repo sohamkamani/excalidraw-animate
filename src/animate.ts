@@ -626,15 +626,18 @@ const getAnimationData = (
   key: 'animateOrder' | 'animateDuration',
   animationData: AnimationData,
 ) => {
-  return animationData[element.id]?.[key] || animationData[element.containerId]?.[key];
+  if (element.text === 'Christmas' && key === 'animateOrder') {
+    console.log(element.text, element.id, element.containerId, animationData[element.containerId]?.[key], animationData)
+  }
+  return animationData[element.containerId]?.[key] || animationData[element.id]?.[key];
 };
 
 const sortSvgNodes = (
   nodes: SVGElement[],
   elements: readonly NonDeletedExcalidrawElement[],
   animationData: AnimationData,
-) =>
-  [...nodes].sort((a, b) => {
+) => {
+  const sortedNodes = [...nodes].sort((a, b) => {
     const aIndex = nodes.indexOf(a);
     const bIndex = nodes.indexOf(b);
     const aOrder =
@@ -642,7 +645,9 @@ const sortSvgNodes = (
     const bOrder =
       getAnimationData(elements[bIndex], 'animateOrder', animationData) ?? 0;
     return aOrder - bOrder;
-  });
+  })
+  return sortedNodes
+};
 
 export const animateSvg = (
   svg: SVGSVGElement,
