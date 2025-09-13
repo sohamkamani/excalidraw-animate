@@ -4,15 +4,21 @@ import type { ExcalidrawElement } from '@excalidraw/excalidraw/element/types';
 import Toolbar from './Toolbar';
 import Viewer from './Viewer';
 import { useLoadSvg } from './useLoadSvg';
+import { AnimationData } from './AnimateConfig';
 
 const AnimateApp = ({
   initialData,
+  animationData,
 }: {
   initialData:
-    | { elements: ExcalidrawElement[]; appState: AppState; files: BinaryFiles }
-    | undefined;
+  | { elements: ExcalidrawElement[]; appState: AppState; files: BinaryFiles }
+  | undefined;
+  animationData?: AnimationData;
 }) => {
-  const { loading, loadedSvgList, loadDataList } = useLoadSvg(initialData);
+  const { loading, loadedSvgList, loadDataList } = useLoadSvg(
+    initialData,
+    animationData,
+  );
   if (loading) {
     return <div style={{ margin: '3px 3px 3px 40px' }}>Loading...</div>;
   }

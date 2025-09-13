@@ -12,6 +12,7 @@ import type { ExcalidrawElement } from '@excalidraw/excalidraw/element/types';
 
 import { loadScene } from './vendor/loadScene';
 import { animateSvg } from './animate';
+import { AnimationData } from './AnimateConfig';
 
 const importLibraryFromUrl = async (url: string) => {
   try {
@@ -31,6 +32,7 @@ export const useLoadSvg = (
   initialData:
     | { elements: ExcalidrawElement[]; appState: AppState; files: BinaryFiles }
     | undefined,
+  animationData?: AnimationData,
 ) => {
   const [loading, setLoading] = useState(true);
   const [loadedSvgList, setLoadedSvgList] = useState<
@@ -66,7 +68,12 @@ export const useLoadSvg = (
             appState: data.appState,
             exportPadding: 30,
           });
-          const result = animateSvg(svg, elements, options);
+          const result = animateSvg(
+            svg,
+            elements,
+            animationData || {},
+            options,
+          );
           console.log(svg);
           if (inSequence) {
             options.startMs = result.finishedMs;

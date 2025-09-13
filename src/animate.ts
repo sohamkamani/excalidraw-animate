@@ -4,6 +4,7 @@ import type {
   ExcalidrawFreeDrawElement,
 } from '@excalidraw/excalidraw/element/types';
 
+import type { AnimationData } from './AnimateConfig';
 import { getFreeDrawSvgPath } from '@excalidraw/excalidraw';
 
 type AnimateOptions = {
@@ -620,29 +621,33 @@ const filterGroupNodes = (nodes: NodeListOf<SVGElement>) =>
     (node) => node.tagName === 'g' || node.tagName === 'use' /* for images */,
   );
 
-const extractNumberFromElement = (
+const getAnimationData = (
   element: NonDeletedExcalidrawElement,
-  key: string,
+  key: 'animateOrder' | 'animateDuration',
+  animationData: AnimationData,
 ) => {
-  const match = element.id.match(new RegExp(`${key}:(-?\\d+)`));
-  return (match && Number(match[1])) || 0;
+  return animationData[element.id]?.[key] || animationData[element.containerId]?.[key];
 };
 
 const sortSvgNodes = (
   nodes: SVGElement[],
   elements: readonly NonDeletedExcalidrawElement[],
+  animationData: AnimationData,
 ) =>
   [...nodes].sort((a, b) => {
     const aIndex = nodes.indexOf(a);
     const bIndex = nodes.indexOf(b);
-    const aOrder = extractNumberFromElement(elements[aIndex], 'animateOrder');
-    const bOrder = extractNumberFromElement(elements[bIndex], 'animateOrder');
+    const aOrder =
+      getAnimationData(elements[aIndex], 'animateOrder', animationData) ?? 0;
+    const bOrder =
+      getAnimationData(elements[bIndex], 'animateOrder', animationData) ?? 0;
     return aOrder - bOrder;
   });
 
 export const animateSvg = (
   svg: SVGSVGElement,
   elements: readonly NonDeletedExcalidrawElement[],
+  animationData: AnimationData,
   options: AnimateOptions = {},
 ) => {
   const reorderedElements: NonDeletedExcalidrawElement[] = [];
@@ -678,7 +683,7 @@ export const animateSvg = (
   const groupElement2Element = new Map(
     groupNodes.map((ele, index) => [ele, reorderedElements[index]]),
   );
-  sortSvgNodes(groupNodes, reorderedElements).forEach((ele) => {
+  sortSvgNodes(groupNodes, reorderedElements, animationData).forEach((ele) => {
     const element = groupElement2Element.get(
       ele,
     ) as NonDeletedExcalidrawElement;
@@ -688,15 +693,18 @@ export const animateSvg = (
         const groupId = groupIds[0];
         const group = groups[groupId];
         const dur =
-          extractNumberFromElement(element, 'animateDuration') ||
+          getAnimationData(element, 'animateDuration', animationData) ||
           groupDur / (group.length + 1);
         patchSvgEle(svg, ele, element, current, dur, options);
         current += dur;
         finished.set(ele, true);
         group.forEach(([childEle, childIndex]) => {
           const dur =
-            extractNumberFromElement(reorderedElements[childIndex], 'animateDuration') ||
-            groupDur / (group.length + 1);
+            getAnimationData(
+              reorderedElements[childIndex],
+              'animateDuration',
+              animationData,
+            ) || groupDur / (group.length + 1);
           if (!finished.has(childEle)) {
             patchSvgEle(
               svg,
@@ -713,7 +721,8 @@ export const animateSvg = (
         delete groups[groupId];
       } else {
         const dur =
-          extractNumberFromElement(element, 'animateDuration') || individualDur;
+          getAnimationData(element, 'animateDuration', animationData) ||
+          individualDur;
         patchSvgEle(svg, ele, element, current, dur, options);
         current += dur;
         finished.set(ele, true);

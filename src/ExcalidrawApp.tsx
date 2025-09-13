@@ -11,22 +11,25 @@ import type { ExcalidrawElement } from '@excalidraw/excalidraw/element/types';
 import '@excalidraw/excalidraw/index.css';
 
 import { AnimateConfig } from './AnimateConfig';
-import type { Drawing } from './AnimateConfig';
+import type { Drawing, AnimationData } from './AnimateConfig';
 
 const ExcalidrawApp = ({
   initialData,
   onChangeData,
+  onAnimationDataChange,
 }: {
   initialData:
-    | { elements: ExcalidrawElement[]; appState: AppState; files: BinaryFiles }
-    | undefined;
+  | { elements: ExcalidrawElement[]; appState: AppState; files: BinaryFiles }
+  | undefined;
   onChangeData: (data: {
     elements: readonly ExcalidrawElement[];
     appState: AppState;
     files: BinaryFiles;
   }) => void;
+  onAnimationDataChange: (data: AnimationData) => void;
 }) => {
   const [drawing, setDrawing] = useState<Drawing | undefined>(initialData);
+  const [animationData, setAnimationData] = useState<AnimationData>({});
   const [excalidrawAPI, setExcalidrawAPI] =
     useState<ExcalidrawImperativeAPI | null>(null);
   return (
@@ -53,7 +56,15 @@ const ExcalidrawApp = ({
           <Sidebar.Header />
           <div style={{ padding: '1rem' }}>
             {drawing && excalidrawAPI ? (
-              <AnimateConfig drawing={drawing} api={excalidrawAPI} />
+              <AnimateConfig
+                drawing={drawing}
+                api={excalidrawAPI}
+                animationData={animationData}
+                onAnimationDataChange={(data) => {
+                  setAnimationData(data);
+                  onAnimationDataChange(data);
+                }}
+              />
             ) : (
               <p>Loading...</p>
             )}

@@ -6,6 +6,12 @@ import type {
 } from '@excalidraw/excalidraw/types';
 import type { ExcalidrawElement } from '@excalidraw/excalidraw/element/types';
 
+export type AnimationData = {
+  [id: string]: {
+    animateOrder?: number;
+    animateDuration?: number;
+  };
+};
 export type Drawing = {
   elements: readonly ExcalidrawElement[];
   appState: AppState;
@@ -36,52 +42,31 @@ const saveAnimateOption = (
   window.location.hash = searchParams.toString();
 };
 
-const extractNumberFromId = (id: string, key: string) => {
-  const match = id.match(new RegExp(`${key}:(-?\\d+)`));
-  return match === null ? undefined : Number(match[1]) || 0;
-};
-
-const applyNumberInId = (
-  drawing: Drawing,
+const updateAnimationData = (
+  base: AnimationData,
   ids: string[],
-  key: string,
+  key: 'animateOrder' | 'animateDuration',
   value: number,
-): Drawing => {
-  const selectedElementIds = { ...drawing.appState.selectedElementIds };
-  const elements = drawing.elements.map((element) => {
-    const { id } = element;
-    if (!ids.includes(id)) {
-      return element;
-    }
-    let newId: string;
-    const match = id.match(new RegExp(`${key}:(-?\\d+)`));
-    if (match) {
-      newId = id.replace(new RegExp(`${key}:(-?\\d+)`), `${key}:${value}`);
-    } else {
-      newId = id + `-${key}:${value}`;
-    }
-    if (id === newId) {
-      return element;
-    }
-    selectedElementIds[newId] = selectedElementIds[id];
-    delete selectedElementIds[id];
-    return { ...element, id: newId };
+): AnimationData => {
+  const newAnimationData: AnimationData = { ...base };
+  ids.forEach((id) => {
+    newAnimationData[id] = {
+      ...newAnimationData[id],
+      [key]: value,
+    };
   });
-  return {
-    elements,
-    appState: {
-      ...drawing.appState,
-      selectedElementIds,
-    },
-    files: drawing.files,
-  };
+  return newAnimationData;
 };
 
 export const AnimateConfig = ({
   drawing,
+  animationData,
+  onAnimationDataChange,
   api,
 }: {
   drawing: Drawing;
+  animationData: AnimationData;
+  onAnimationDataChange: (data: AnimationData) => void;
   api: ExcalidrawImperativeAPI;
 }) => {
   const defaultAnimateOptions = loadAnimateOptions();
@@ -95,13 +80,13 @@ export const AnimateConfig = ({
 
   const animateOrderSet = new Set<number | undefined>();
   selectedIds.forEach((id) => {
-    animateOrderSet.add(extractNumberFromId(id, 'animateOrder'));
+    animateOrderSet.add(animationData[id]?.animateOrder);
   });
   const onChangeAnimateOrder = (e: ChangeEvent<HTMLInputElement>) => {
     const value = Math.floor(Number(e.target.value));
     if (Number.isFinite(value)) {
-      api.updateScene(
-        applyNumberInId(drawing, selectedIds, 'animateOrder', value),
+      onAnimationDataChange(
+        updateAnimationData(animationData, selectedIds, 'animateOrder', value),
       );
     }
   };
@@ -109,13 +94,18 @@ export const AnimateConfig = ({
 
   const animateDurationSet = new Set<number | undefined>();
   selectedIds.forEach((id) => {
-    animateDurationSet.add(extractNumberFromId(id, 'animateDuration'));
+    animateDurationSet.add(animationData[id]?.animateDuration);
   });
   const onChangeAnimateDuration = (e: ChangeEvent<HTMLInputElement>) => {
     const value = Math.floor(Number(e.target.value));
     if (Number.isFinite(value)) {
-      api.updateScene(
-        applyNumberInId(drawing, selectedIds, 'animateDuration', value),
+      onAnimationDataChange(
+        updateAnimationData(
+          animationData,
+          selectedIds,
+          'animateDuration',
+          value,
+        ),
       );
     }
   };
