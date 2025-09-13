@@ -1,10 +1,13 @@
 import type { ChangeEvent } from 'react';
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 import type {
   AppState,
   BinaryFiles,
   ExcalidrawImperativeAPI,
 } from '@excalidraw/excalidraw/types';
 import type { ExcalidrawElement } from '@excalidraw/excalidraw/element/types';
+import { SortableList } from './SortableList';
 
 export type AnimationData = {
   [id: string]: {
@@ -78,19 +81,16 @@ export const AnimateConfig = ({
       drawing.elements.some((element) => element.id === id),
   );
 
-  const animateOrderSet = new Set<number | undefined>();
-  selectedIds.forEach((id) => {
-    animateOrderSet.add(animationData[id]?.animateOrder);
-  });
-  const onChangeAnimateOrder = (e: ChangeEvent<HTMLInputElement>) => {
-    const value = Math.floor(Number(e.target.value));
-    if (Number.isFinite(value)) {
-      onAnimationDataChange(
-        updateAnimationData(animationData, selectedIds, 'animateOrder', value),
-      );
-    }
+  const onSortEnd = (sortedIds: string[]) => {
+    const newAnimationData = { ...animationData };
+    sortedIds.forEach((id, index) => {
+      newAnimationData[id] = {
+        ...newAnimationData[id],
+        animateOrder: index,
+      };
+    });
+    onAnimationDataChange(newAnimationData);
   };
-  const animateOrderDisabled = !animateOrderSet.size;
 
   const animateDurationSet = new Set<number | undefined>();
   selectedIds.forEach((id) => {
@@ -145,24 +145,26 @@ export const AnimateConfig = ({
       {/* Animation Section */}
       <div style={{ fontWeight: 'bold', marginBottom: 4 }}>Animation</div>
 
-      <div style={{ opacity: animateOrderDisabled ? 0.3 : 1.0 }}>
+      <div>
         Order:{' '}
-        {animateOrderSet.size > 1 ? (
-          <span style={{ opacity: 0.5 }}>(Mixed values – cannot edit)</span>
-        ) : (
-          <input
-            className="app-input"
-            type="number"
-            disabled={animateOrderDisabled}
-            value={
-              (animateOrderSet.size === 1 &&
-                animateOrderSet.values().next().value) ||
-              0
-            }
-            onChange={onChangeAnimateOrder}
-            style={{ width: 50, minWidth: 50 }}
+        <DndProvider backend={HTML5Backend}>
+          <SortableList
+            items={drawing.elements
+              .filter((e) => animationData[e.id]?.animateOrder !== undefined)
+              .sort(
+                (a, b) =>
+                  (animationData[a.id]?.animateOrder ?? 0) -
+                  (animationData[b.id]?.animateOrder ?? 0),
+              )
+              .map((element) => ({
+                id: element.id,
+                text:
+                  `#${animationData[element.id]?.animateOrder} ${element.type
+                  } ${element.id.slice(0, 3)}...` || '',
+              }))}
+            setItems={(items) => onSortEnd(items.map((item) => item.id))}
           />
-        )}
+        </DndProvider>
       </div>
 
       <div style={{ opacity: animateDurationDisabled ? 0.3 : 1.0 }}>
