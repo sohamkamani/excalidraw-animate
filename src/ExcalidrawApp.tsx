@@ -31,13 +31,16 @@ const ExcalidrawApp = ({
   animationData: AnimationData;
   onAnimationDataChange: (data: AnimationData) => void;
 }) => {
+
   const [drawing, setDrawing] = useState<Drawing | undefined>(initialData);
   const [excalidrawAPI, setExcalidrawAPI] =
     useState<ExcalidrawImperativeAPI | null>(null);
   return (
     <div style={{ height: '100vh', width: '100vw' }}>
       <Excalidraw
-        excalidrawAPI={(api) => setExcalidrawAPI(api)}
+        excalidrawAPI={(api) => {
+          setExcalidrawAPI(api)
+        }}
         initialData={initialData}
         onChange={(elements, appState, files) => {
           setDrawing((prev) => {

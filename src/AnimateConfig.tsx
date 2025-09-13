@@ -135,8 +135,10 @@ export const AnimateConfig = ({
 
   const nonDeletedElements = drawing.elements
     .filter((e) => !e.isDeleted)
-  const elementMap = {}
-  nonDeletedElements.forEach(elem => { elementMap[elem.id] = elem })
+  const elementMap: Record<string, ExcalidrawElement> = {};
+  nonDeletedElements.forEach((elem) => {
+    elementMap[elem.id] = elem;
+  });
   return (
     <div
       style={{
@@ -154,9 +156,13 @@ export const AnimateConfig = ({
         <div style={{ maxHeight: 600, overflowY: 'auto' }}>
           <DndProvider backend={HTML5Backend}>
             <SortableList
+              selectedIds={Object.fromEntries(
+                selectedIds.map((id) => [id, true]),
+              )}
               items={nonDeletedElements
                 .filter(
                   (e) =>
+                    e.type !== 'selection' &&
                     !e.containerId &&
                     animationData[e.id]?.animateOrder !== undefined,
                 )
@@ -207,12 +213,18 @@ export const AnimateConfig = ({
   );
 };
 
-function getElementText(elem: ExcalidrawElement, elementMap) {
+function getElementText(
+  elem: ExcalidrawElement,
+  elementMap: Record<string, ExcalidrawElement>,
+) {
   let text = '';
-  elem.boundElements?.forEach(e => {
+  elem.boundElements?.forEach((e) => {
     if (e.type === 'text') {
-      text = elementMap[e.id].text
+      const textElement = elementMap[e.id];
+      if (textElement && 'text' in textElement) {
+        text = textElement.text;
+      }
     }
-  })
-  return text
+  });
+  return text;
 }

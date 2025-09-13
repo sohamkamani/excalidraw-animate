@@ -626,10 +626,23 @@ const getAnimationData = (
   key: 'animateOrder' | 'animateDuration',
   animationData: AnimationData,
 ) => {
-  if (element.text === 'Christmas' && key === 'animateOrder') {
-    console.log(element.text, element.id, element.containerId, animationData[element.containerId]?.[key], animationData)
+  if ('text' in element && element.text === 'Christmas' && key === 'animateOrder') {
+    console.log(
+      element.text,
+      element.id,
+      'containerId' in element && element.containerId,
+      'containerId' in element &&
+      element.containerId &&
+      animationData[element.containerId]?.[key],
+      animationData,
+    );
   }
-  return animationData[element.containerId]?.[key] || animationData[element.id]?.[key];
+  return (
+    ('containerId' in element &&
+      element.containerId &&
+      animationData[element.containerId]?.[key]) ||
+    animationData[element.id]?.[key]
+  );
 };
 
 const sortSvgNodes = (
@@ -657,7 +670,12 @@ export const animateSvg = (
 ) => {
   const reorderedElements: NonDeletedExcalidrawElement[] = [];
   const boundTextElementIds = new Set(
-    elements.filter((el) => el.type === 'text' && el.containerId).map((el) => el.id)
+    elements
+      .filter(
+        (el) =>
+          el.type === 'text' && 'containerId' in el && el.containerId,
+      )
+      .map((el) => el.id),
   );
 
   elements.forEach((element) => {
@@ -672,7 +690,10 @@ export const animateSvg = (
 
     // Find and add all text elements bound to this container.
     const boundElements = elements.filter(
-      (e) => e.type === 'text' && e.containerId === element.id
+      (e) =>
+        e.type === 'text' &&
+        'containerId' in e &&
+        e.containerId === element.id,
     );
     reorderedElements.push(...boundElements);
   });

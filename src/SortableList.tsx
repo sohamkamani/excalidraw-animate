@@ -15,9 +15,16 @@ interface SortableItemProps {
   text: string;
   index: number;
   moveCard: (dragIndex: number, hoverIndex: number) => void;
+  selected?: boolean;
 }
 
-const SortableItem: FC<SortableItemProps> = ({ id, text, index, moveCard }) => {
+const SortableItem: FC<SortableItemProps> = ({
+  id,
+  text,
+  index,
+  moveCard,
+  selected,
+}) => {
   const ref = React.useRef<HTMLDivElement>(null);
   const [, drop] = useDrop({
     accept: ItemTypes.CARD,
@@ -47,7 +54,18 @@ const SortableItem: FC<SortableItemProps> = ({ id, text, index, moveCard }) => {
   drag(drop(ref));
 
   return (
-    <div ref={ref} style={{ border: '1px solid gray', padding: '0.5rem 1rem', marginBottom: '.5rem', cursor: 'move', opacity }}>
+    <div
+      ref={ref}
+      style={{
+        border: '1px solid gray',
+        padding: '0.5rem 1rem',
+        marginBottom: '.5rem',
+        cursor: 'move',
+        opacity,
+        backgroundColor: selected ? 'red' : 'white',
+        color: selected ? 'white' : 'black',
+      }}
+    >
       {text}
     </div>
   );
@@ -56,9 +74,14 @@ const SortableItem: FC<SortableItemProps> = ({ id, text, index, moveCard }) => {
 interface SortableListProps {
   items: Item[];
   setItems: (items: Item[]) => void;
-}
+  selectedIds: Record<string, boolean>;
+};
 
-export const SortableList: FC<SortableListProps> = ({ items, setItems }) => {
+export const SortableList: FC<SortableListProps> = ({
+  items,
+  setItems,
+  selectedIds,
+}) => {
   const moveCard = (dragIndex: number, hoverIndex: number) => {
     const dragItem = items[dragIndex];
     if (dragItem) {
@@ -72,7 +95,14 @@ export const SortableList: FC<SortableListProps> = ({ items, setItems }) => {
   return (
     <div>
       {items.map((item, i) => (
-        <SortableItem key={item.id} index={i} id={item.id} text={item.text} moveCard={moveCard} />
+        <SortableItem
+          key={item.id}
+          index={i}
+          id={item.id}
+          text={item.text}
+          moveCard={moveCard}
+          selected={!!selectedIds[item.id]}
+        />
       ))}
     </div>
   );
