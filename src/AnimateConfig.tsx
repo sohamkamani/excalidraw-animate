@@ -150,7 +150,11 @@ export const AnimateConfig = ({
         <DndProvider backend={HTML5Backend}>
           <SortableList
             items={drawing.elements
-              .filter((e) => animationData[e.id]?.animateOrder !== undefined)
+              .filter(
+                (e) =>
+                  !e.isDeleted &&
+                  animationData[e.id]?.animateOrder !== undefined,
+              )
               .sort(
                 (a, b) =>
                   (animationData[a.id]?.animateOrder ?? 0) -

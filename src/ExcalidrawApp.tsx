@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Excalidraw, Footer, Sidebar } from '@excalidraw/excalidraw';
 import type {
   AppState,
@@ -32,24 +32,6 @@ const ExcalidrawApp = ({
   const [animationData, setAnimationData] = useState<AnimationData>({});
   const [excalidrawAPI, setExcalidrawAPI] =
     useState<ExcalidrawImperativeAPI | null>(null);
-  const initialized = useRef(false);
-  useEffect(() => {
-    if (initialized.current || !drawing) {
-      return;
-    }
-    initialized.current = true;
-    const newAnimationData: AnimationData = {};
-    drawing.elements.forEach((ele) => {
-      newAnimationData[ele.id] = {
-        ...newAnimationData[ele.id],
-        animateOrder: newAnimationData[ele.id]?.animateOrder ?? 0,
-      };
-    });
-    setAnimationData((prev) => ({
-      ...newAnimationData,
-      ...prev,
-    }));
-  }, [drawing]);
   return (
     <div style={{ height: '100vh', width: '100vw' }}>
       <Excalidraw
@@ -68,6 +50,25 @@ const ExcalidrawApp = ({
             return { elements, appState, files };
           });
           onChangeData({ elements, appState, files });
+          setAnimationData((prev) => {
+            const newAnimationData: AnimationData = { ...prev };
+            let changed = false;
+            elements.forEach((ele) => {
+              if (ele.isDeleted) {
+                if (ele.id in newAnimationData) {
+                  delete newAnimationData[ele.id];
+                  changed = true;
+                }
+              } else if (!(ele.id in newAnimationData)) {
+                newAnimationData[ele.id] = {
+                  ...newAnimationData[ele.id],
+                  animateOrder: newAnimationData[ele.id]?.animateOrder ?? 0,
+                };
+                changed = true;
+              }
+            });
+            return changed ? newAnimationData : prev;
+          });
         }}
       >
         <Sidebar name="custom" docked={true}>
