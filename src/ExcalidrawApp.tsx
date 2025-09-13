@@ -12,10 +12,12 @@ import '@excalidraw/excalidraw/index.css';
 
 import { AnimateConfig } from './AnimateConfig';
 import type { Drawing, AnimationData } from './AnimateConfig';
+import { updateAnimationData } from './AnimateConfig';
 
 const ExcalidrawApp = ({
   initialData,
   onChangeData,
+  animationData,
   onAnimationDataChange,
 }: {
   initialData:
@@ -26,10 +28,10 @@ const ExcalidrawApp = ({
     appState: AppState;
     files: BinaryFiles;
   }) => void;
+  animationData: AnimationData;
   onAnimationDataChange: (data: AnimationData) => void;
 }) => {
   const [drawing, setDrawing] = useState<Drawing | undefined>(initialData);
-  const [animationData, setAnimationData] = useState<AnimationData>({});
   const [excalidrawAPI, setExcalidrawAPI] =
     useState<ExcalidrawImperativeAPI | null>(null);
   return (
@@ -50,25 +52,27 @@ const ExcalidrawApp = ({
             return { elements, appState, files };
           });
           onChangeData({ elements, appState, files });
-          setAnimationData((prev) => {
-            const newAnimationData: AnimationData = { ...prev };
-            let changed = false;
-            elements.forEach((ele) => {
-              if (ele.isDeleted) {
-                if (ele.id in newAnimationData) {
-                  delete newAnimationData[ele.id];
+          onAnimationDataChange(
+            ((prev) => {
+              const newAnimationData: AnimationData = { ...prev };
+              let changed = false;
+              elements.forEach((ele) => {
+                if (ele.isDeleted) {
+                  if (ele.id in newAnimationData) {
+                    delete newAnimationData[ele.id];
+                    changed = true;
+                  }
+                } else if (!(ele.id in newAnimationData)) {
+                  newAnimationData[ele.id] = {
+                    ...newAnimationData[ele.id],
+                    animateOrder: newAnimationData[ele.id]?.animateOrder ?? 0,
+                  };
                   changed = true;
                 }
-              } else if (!(ele.id in newAnimationData)) {
-                newAnimationData[ele.id] = {
-                  ...newAnimationData[ele.id],
-                  animateOrder: newAnimationData[ele.id]?.animateOrder ?? 0,
-                };
-                changed = true;
-              }
-            });
-            return changed ? newAnimationData : prev;
-          });
+              });
+              return changed ? newAnimationData : prev;
+            })(animationData),
+          );
         }}
       >
         <Sidebar name="custom" docked={true}>
@@ -79,10 +83,7 @@ const ExcalidrawApp = ({
                 drawing={drawing}
                 api={excalidrawAPI}
                 animationData={animationData}
-                onAnimationDataChange={(data) => {
-                  setAnimationData(data);
-                  onAnimationDataChange(data);
-                }}
+                onAnimationDataChange={onAnimationDataChange}
               />
             ) : (
               <p>Loading...</p>

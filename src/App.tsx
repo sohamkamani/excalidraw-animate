@@ -72,6 +72,7 @@ const App = () => {
         <ExcalidrawApp
           initialData={loadFromStorage()}
           onChangeData={(data) => saveToStorage(data, animationData)}
+          animationData={animationData}
           onAnimationDataChange={setAnimationData}
         />
       )}

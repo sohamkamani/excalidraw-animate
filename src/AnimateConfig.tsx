@@ -45,7 +45,7 @@ const saveAnimateOption = (
   window.location.hash = searchParams.toString();
 };
 
-const updateAnimationData = (
+export const updateAnimationData = (
   base: AnimationData,
   ids: string[],
   key: 'animateOrder' | 'animateDuration',
